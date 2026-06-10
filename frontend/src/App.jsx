@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 function getSourceBadges(item) {
@@ -23,6 +23,56 @@ function ScoreBar({ value, max = 5, color = "purple" }) {
 
 function MovieCard({ movie }) {
   const [expanded, setExpanded] = useState(false);
+  const [posterUrl, setPosterUrl] = useState(null);
+  const [trailerUrl, setTrailerUrl] = useState(null); // Added state for the trailer
+  const [loadingPoster, setLoadingPoster] = useState(false);
+
+  useEffect(() => {
+    if (!movie.tmdb_id) return;
+    setLoadingPoster(true);
+    let isMounted = true;
+    const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+
+    // 1. Fetch Poster
+    fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}?api_key=${API_KEY}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch poster");
+        return res.json();
+      })
+      .then((data) => {
+        if (isMounted && data.poster_path) {
+          setPosterUrl(`https://image.tmdb.org/t/p/w500${data.poster_path}`);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching poster:", err);
+      });
+
+    // 2. Fetch Trailer
+    fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}/videos?api_key=${API_KEY}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.results) {
+          // Look for the official YouTube trailer
+          const trailer = data.results.find(
+            (vid) => vid.site === "YouTube" && vid.type === "Trailer"
+          );
+          if (trailer) {
+            setTrailerUrl(`https://www.youtube.com/watch?v=${trailer.key}`);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching trailer:", err);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingPoster(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [movie.tmdb_id]);
 
   // backend returns genres as an array already e.g. ["Crime", "Drama"]
   const genres = Array.isArray(movie.genres)
@@ -38,11 +88,20 @@ function MovieCard({ movie }) {
 
   return (
     <div className="card">
-      {movie.poster ? (
-        <img src={movie.poster} alt={movie.title} className="card-poster" />
+      {posterUrl ? (
+        <img
+          src={posterUrl}
+          alt={movie.title}
+          className="card-poster"
+          style={{ borderRadius: "10px" }}
+        />
       ) : (
         <div className="poster-placeholder">
-          <i className="ti ti-movie" aria-hidden="true" />
+          {loadingPoster ? (
+            <i className="ti ti-loader-2 spin" aria-hidden="true" />
+          ) : (
+            <i className="ti ti-movie" aria-hidden="true" />
+          )}
         </div>
       )}
 
@@ -55,10 +114,10 @@ function MovieCard({ movie }) {
             <span
               key={b}
               className={`badge ${b === "Content"
-                  ? "badge-content"
-                  : b.includes("CF")
-                    ? "badge-collab"
-                    : ""
+                ? "badge-content"
+                : b.includes("CF")
+                  ? "badge-collab"
+                  : ""
                 }`}
             >
               {b}
@@ -140,9 +199,9 @@ function MovieCard({ movie }) {
                 <span className="detail-value">{movie.overview}</span>
               </div>
             )}
-            {movie.trailer && (
+            {trailerUrl && (
               <a
-                href={movie.trailer}
+                href={trailerUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="trailer-btn"
@@ -173,9 +232,10 @@ export default function App() {
     setResults([]);
 
     try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
       // Fix: correct endpoint + correct param names matching main.py
       const res = await fetch(
-        `http://localhost:8000/hybrid_recommend?user_id=${userInput}&movie_title=${encodeURIComponent(movieInput)}&top_n=10`
+        `${baseUrl}/hybrid_recommend?user_id=${userInput}&movie_title=${encodeURIComponent(movieInput)}&top_n=10`
       );
 
       if (!res.ok) {
@@ -229,7 +289,7 @@ export default function App() {
               disabled={loading}
             >
               {loading ? (
-                <i className="ti ti-loader-2" aria-hidden="true" />
+                <i className="ti ti-loader-2 spin" aria-hidden="true" />
               ) : (
                 <i className="ti ti-search" aria-hidden="true" />
               )}
