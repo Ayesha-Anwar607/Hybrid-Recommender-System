@@ -1,0 +1,431 @@
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0a0a0f;
+  color: #f0f0f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100vh;
+}
+
+/* ── App Shell ────────────────────────────────────────────────────────────── */
+.app {
+  min-height: 100vh;
+  background: #0a0a0f;
+  padding-bottom: 4rem;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────────── */
+.hero {
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+}
+
+.logo {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: #7F77DD;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.hero-title {
+  font-size: 30px;
+  font-weight: 500;
+  color: #f0f0f5;
+  margin-bottom: 0.4rem;
+}
+
+.hero-sub {
+  font-size: 13px;
+  color: #5F5E5A;
+  margin-bottom: 2rem;
+}
+
+/* ── Search ───────────────────────────────────────────────────────────────── */
+.search-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.search-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  background: #13131a;
+  border: 0.5px solid #3C3489;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #f0f0f5;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input:focus {
+  border-color: #7F77DD;
+}
+
+.search-input::placeholder {
+  color: #444441;
+}
+
+.user-input {
+  width: 110px;
+  background: #13131a;
+  border: 0.5px solid #3C3489;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #f0f0f5;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.user-input:focus {
+  border-color: #7F77DD;
+}
+
+.user-input::placeholder {
+  color: #444441;
+}
+
+.search-btn {
+  background: #534AB7;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #EEEDFE;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.search-btn:hover {
+  background: #7F77DD;
+}
+
+.search-btn:disabled {
+  background: #26215C;
+  cursor: not-allowed;
+}
+
+/* ── Because bar ──────────────────────────────────────────────────────────── */
+.because-bar {
+  margin-top: 1.2rem;
+  font-size: 13px;
+  color: #5F5E5A;
+}
+
+.because-bar span {
+  color: #AFA9EC;
+  font-weight: 500;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: #444441;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: #26215C;
+}
+
+.empty-state p {
+  font-size: 14px;
+}
+
+/* ── Error ────────────────────────────────────────────────────────────────── */
+.error-msg {
+  text-align: center;
+  color: #E24B4A;
+  font-size: 14px;
+  padding: 1rem;
+}
+
+/* ── Results Grid ─────────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1rem;
+  max-width: 960px;
+  margin: 1.5rem auto 0;
+  padding: 0 1rem;
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
+.card {
+  background: #13131a;
+  border: 0.5px solid #26215C;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: #534AB7;
+}
+
+.card-poster {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.poster-placeholder {
+  width: 100%;
+  height: 150px;
+  background: #0e0e18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poster-placeholder i {
+  font-size: 40px;
+  color: #26215C;
+}
+
+/* ── Card body ────────────────────────────────────────────────────────────── */
+.card-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f0f0f5;
+  line-height: 1.35;
+}
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.badge-content {
+  background: #1e1e3a;
+  color: #AFA9EC;
+  border: 0.5px solid #3C3489;
+}
+
+.badge-collab {
+  background: #0a1f1a;
+  color: #5DCAA5;
+  border: 0.5px solid #0F6E56;
+}
+
+.badge-genre {
+  background: #18181e;
+  color: #888780;
+  border: 0.5px solid #2C2C2A;
+}
+
+/* ── Scores ───────────────────────────────────────────────────────────────── */
+.scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  border-top: 0.5px solid #1e1e2e;
+  padding-top: 10px;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.score-item.span2 {
+  grid-column: span 2;
+}
+
+.score-label {
+  font-size: 10px;
+  color: #444441;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.score-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #888780;
+}
+
+.score-value.highlight {
+  font-size: 16px;
+  color: #AFA9EC;
+}
+
+/* ── Score bars ───────────────────────────────────────────────────────────── */
+.bar-wrap {
+  height: 3px;
+  background: #1e1e2e;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 3px;
+  border-radius: 2px;
+  background: #534AB7;
+  transition: width 0.4s ease;
+}
+
+.bar-fill.teal {
+  background: #1D9E75;
+}
+
+/* ── Expand button ────────────────────────────────────────────────────────── */
+.expand-btn {
+  background: none;
+  border: 0.5px solid #26215C;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: #7F77DD;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+  margin-top: auto;
+  width: 100%;
+  justify-content: center;
+}
+
+.expand-btn:hover {
+  background: #1e1e3a;
+  border-color: #534AB7;
+}
+
+/* ── Expanded details ─────────────────────────────────────────────────────── */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 0.5px solid #1e1e2e;
+  padding-top: 10px;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detail-label {
+  font-size: 10px;
+  color: #444441;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.detail-value {
+  font-size: 12px;
+  color: #888780;
+  line-height: 1.5;
+}
+
+/* ── Trailer button ───────────────────────────────────────────────────────── */
+.trailer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #1a0a0a;
+  border: 0.5px solid #993C1D;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #F0997B;
+  text-decoration: none;
+  transition: background 0.15s;
+  width: fit-content;
+}
+
+.trailer-btn:hover {
+  background: #2a1010;
+}
+
+.trailer-btn i {
+  font-size: 16px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .hero-title {
+    font-size: 22px;
+  }
+
+  .search-row {
+    flex-direction: column;
+  }
+
+  .user-input {
+    width: 100%;
+  }
+
+  .search-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
