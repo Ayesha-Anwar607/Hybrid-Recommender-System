@@ -465,6 +465,59 @@ def hybrid_recommend(user_id: int, movie_title: str, top_n: int = 10):
     }
 
 
+@app.get("/popular")
+def get_popular_movies(n: int = 12):
+    """
+    Returns the top N popular/well-rated movies from the dataset.
+    Used to populate the landing page before any search is made.
+    """
+    df = movies_by_id[
+        movies_by_id["vote_average"].notna() & movies_by_id["popularity"].notna()
+    ].copy()
+    df["_score"] = df["vote_average"].astype(float) * np.log1p(df["popularity"].astype(float))
+    top = df.nlargest(n, "_score")
+    result = []
+    for mid, row in top.iterrows():
+        # pyrefly: ignore [redundant-cast]
+        meta = _movie_metadata(cast(pd.Series, row))
+        result.append({
+            "movieId": _scalar_int(mid),
+            "title": row["title"],
+            "tmdb_id": _scalar_int(row["tmdb_id"]),
+            "predicted_rating": _scalar_float(row["vote_average"]),
+            "content_score": 0.0,
+            "item_collab_score": None,
+            "user_collab_score": None,
+            **meta,
+        })
+    return {"movies": result}
+
+
+@app.get("/genres")
+def get_all_genres():
+    """
+    Returns all unique genres from the dataset, sorted alphabetically.
+    Used to populate the genre filter panel on page load.
+    """
+    genre_set: set[str] = set()
+    for genres_raw in movies_df["genres"].dropna():
+        for g in str(genres_raw).replace("|", ",").split(","):
+            g = g.strip()
+            if g:
+                genre_set.add(g)
+    return {"genres": sorted(genre_set)}
+
+
+@app.get("/movie_titles")
+def get_movie_titles():
+    """
+    Returns all unique movie titles from the dataset, sorted alphabetically.
+    Used by the frontend autocomplete search dropdown.
+    """
+    titles = sorted(movies_df["title"].dropna().unique().tolist())
+    return {"titles": titles}
+
+
 @app.get("/")
 def read_root():
     return {"message": "Movie Recommender API is running!"}
