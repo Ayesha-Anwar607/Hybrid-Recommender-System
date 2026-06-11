@@ -1,10 +1,19 @@
-# 🎬 Movie Recommender System (XGBoost Hybrid)
+# 🎬 CineMatch — Movie Recommender System (XGBoost Hybrid)
 
-A state-of-the-art hybrid movie recommender system that combines **Content-Based Filtering** (Overview, Genres, Cast, Director) and **Collaborative Filtering** (Item-Based and User-Based) using a **Machine Learning Ranking Model (XGBoost)** to predict user ratings. Served via a **FastAPI** backend and a **React + Vite** frontend.
+A state-of-the-art hybrid movie recommender system that combines **Content-Based Filtering** (TF-IDF on Overview, Genres, Cast, Director) and **Collaborative Filtering** (Item-Based and User-Based) using a **Machine Learning Ranking Model (XGBoost)** to predict user ratings. Served via a **FastAPI** backend (deployed on **Render**) and a **React + Vite** frontend (deployed on **Vercel**).
+
+### 🔗 Live Links
+* **Live Website (Vercel)**: [https://hybrid-recommender-system-alpha.vercel.app/](https://hybrid-recommender-system-alpha.vercel.app/)
+* **Backend API Docs (Render)**: [https://hybrid-recommender-system-z6m4.onrender.com/docs](https://hybrid-recommender-system-z6m4.onrender.com/docs)
 
 ---
 
-## 🏗️ Model Architecture
+## 🖥️ Live Application Preview
+![CineMatch Dashboard](screenshots/cinematch_dashboard.png)
+
+---
+
+## 🏗️ Model Architecture & Algorithms
 
 This recommender system is designed as a **two-stage ranker** similar to industrial engines (e.g., Netflix and YouTube):
 
@@ -19,21 +28,33 @@ This recommender system is designed as a **two-stage ranker** similar to industr
  └──────┬───────┘                                    └──────┬───────┘
         │ (Similarity Scores)                               │ (Item/User Predictions)
         ▼                                                   ▼
-┌───────────────────────────────────────────────────────────────────┐
-│                     Feature Extraction Stage                      │
-│  - User/Movie averages (leakage adjusted)                         │
-│  - User rating counts / Movie popularity                          │
-│  - Content / Collaborative Filtering features                      │
-└───────────────────────────────┬───────────────────────────────────┘
-                                │ (Feature Matrix)
-                                ▼
-                       ┌─────────────────┐
-                       │  XGBoost Ranker │ (Trained Regressor)
-                       └────────┬────────┘
-                                │ (Predicted Ratings)
-                                ▼
-                      [ Top K Recommendations ]
+ ┌───────────────────────────────────────────────────────────────────┐
+ │                     Feature Extraction Stage                      │
+ │  - User/Movie averages (leakage adjusted)                         │
+ │  - User rating counts / Movie popularity                          │
+ │  - Content / Collaborative Filtering features                      │
+ └───────────────────────────────┬───────────────────────────────────┘
+                                 │ (Feature Matrix)
+                                 ▼
+                        ┌─────────────────┐
+                        │  XGBoost Ranker │ (Trained Regressor)
+                        └────────┬────────┘
+                                 │ (Predicted Ratings)
+                                 ▼
+                       [ Top K Recommendations ]
 ```
+
+### 🧠 Core Algorithms
+1. **Content-Based Filtering (TF-IDF + Cosine Similarity)**:
+   * Extracts textual features from movie overviews, genres, cast, and directors using **TF-IDF Vectorization** (Term Frequency-Inverse Document Frequency).
+   * Calculates pairwise **Cosine Similarity** between movies to quantify content alignment.
+   * Computes a weighted content score (30% Overview, 40% Genres, 15% Director, 15% Cast).
+2. **Collaborative Filtering**:
+   * **Item-Based Collaborative Filtering**: Measures similarity of rating profiles between movies to predict how a user would rate a movie based on their rating history of similar movies.
+   * **User-Based Collaborative Filtering (Matrix Factorization)**: Matches rating behaviors between users to recommend movies liked by users with similar tastes.
+3. **XGBoost Rating Ranking Model**:
+   * Extracted features (content similarity scores, collaborative filtering scores, leakage-adjusted average ratings, and rating counts) are fed into an **XGBoost Regressor**.
+   * The model is trained to predict the exact rating a user would give to candidate movies, sorting the final recommendations dynamically.
 
 ### Features Fed to XGBoost:
 1. `user_avg_rating`: User's average rating (leakage adjusted).
@@ -55,34 +76,37 @@ Recommender file/
 ├── API/
 │   ├── __init__.py
 │   ├── main.py                              # FastAPI server — all endpoints
-│   └── models/                             # (Git-ignored) Trained models & matrices
+│   ├── requirements.txt                     # Backend dependencies for Render
+│   ├── Data/                                # Tracked dataset files (final CSVs)
+│   └── models/                              # Tracked trained models & matrices
 │       ├── xgboost_hybrid.joblib
 │       ├── item_sim_df.joblib
 │       ├── user_sim_df.joblib
 │       ├── tfidf_*.joblib
 │       └── *_matrix.npz
-├── Data/                                   # (Git-ignored) Raw & processed CSV datasets
-│   ├── movies.csv / ratings.csv            # Source: MovieLens
-│   ├── final_movie.csv                     # Generated by data acquisition notebook
-│   └── final_movie_cleaned.csv             # Generated after cleaning
-├── frontend/                               # React + Vite UI
+├── frontend/                                # React + Vite UI
 │   ├── src/
-│   │   ├── App.jsx                         # Main component (search + cards)
-│   │   └── App.css                         # Dark-mode styled UI
+│   │   ├── App.jsx                         # Main component (Cinematic Glass UI)
+│   │   ├── App.css                         # Dark-mode styled CSS
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── .env                                 # Environment keys (ignored)
 │   └── package.json
-├── Requirement.txt                         # Python backend dependencies
+├── screenshots/
+│   └── cinematch_dashboard.png              # Screenshot of the live application
+├── requirements.txt                         # Root Python dependencies
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-## ⚙️ Installation & Setup
+## ⚙️ Installation & Setup (Local)
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/movie-recommender.git
-cd movie-recommender
+git clone https://github.com/Ayesha-Anwar607/Hybrid-Recommender-System.git
+cd Hybrid-Recommender-System
 ```
 
 ### 2. Set Up Python Environment
@@ -91,32 +115,24 @@ python -m venv .venv
 .venv\Scripts\activate        # Windows
 # source .venv/bin/activate   # Linux/macOS
 
-pip install -r Requirement.txt
+pip install -r requirements.txt
 ```
 
-### 3. Configure TMDb API Key
-In `01_data_acquisition.ipynb`, replace `YOUR_TMDB_API_KEY` with your actual [TMDb API key](https://www.themoviedb.org/settings/api):
-```python
-tmdb.api_key = "YOUR_TMDB_API_KEY"
+### 3. Configure API Keys (Frontend)
+Create a `.env` file in the `frontend` folder:
+```env
+VITE_TMDB_API_KEY=your_tmdb_api_key_here
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-### 4. Data Requirements
-Datasets are excluded from this repo (too large). Obtain and place these files inside `Data/`:
-- `movies.csv` & `ratings.csv` — from [MovieLens Latest Small Dataset](https://grouplens.org/datasets/movielens/)
-- `final_movie.csv` — generated by running `01_data_acquisition.ipynb`
-- `final_movie_cleaned.csv` — generated during the cleaning phase
-
-### 5. Train the Models
-Run all cells in `01_Data_Cleaning_and_Recommendation.ipynb`. This will generate all `.joblib` and `.npz` files inside `API/models/`.
-
-### 6. Run the Backend API
+### 4. Run the Backend API
 ```bash
 python -m API.main
 # API is live at: http://localhost:8000
 # Swagger docs: http://localhost:8000/docs
 ```
 
-### 7. Run the Frontend
+### 5. Run the Frontend
 ```bash
 cd frontend
 npm install
@@ -131,9 +147,10 @@ npm run dev
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/` | Health check |
-| `GET` | `/recommend?movie_title=Inception&k=10` | Content-based recommendations |
-| `GET` | `/recommend?movie_title=Inception&user_id=1&k=10` | Full hybrid recommendations |
-| `GET` | `/hybrid_recommend?user_id=1&movie_title=Inception&top_n=10` | Dedicated hybrid endpoint |
+| `GET` | `/movie_titles` | Returns all unique, sorted movie titles for search autocomplete |
+| `GET` | `/genres` | Returns all unique genres for filter panel |
+| `GET` | `/popular?n=12` | Returns top movies ranked by rating/popularity for landing recommendations |
+| `GET` | `/hybrid_recommend?user_id=1&movie_title=Inception&top_n=10` | Full hybrid recommendations for user ID + movie |
 
 ---
 
@@ -162,7 +179,8 @@ The XGBoost Hybrid Ranker achieves the following performance metrics on the test
 |-------|-----------|
 | ML / Training | Python, Scikit-learn, XGBoost, Pandas, NumPy, SciPy |
 | Backend API | FastAPI, Uvicorn |
-| Frontend | React, Vite, CSS |
+| Frontend | React, Vite, CSS (Cinematic Glass UI) |
+| Hosting | Render (Backend API), Vercel (Frontend Client) |
 | Data Source | MovieLens (GroupLens), TMDb API |
 
 ---
@@ -176,25 +194,15 @@ The XGBoost Hybrid Ranker achieves the following performance metrics on the test
 
 ### ⚡ Distributed & Parallel Computing for Scale
 As the user base and dataset grow, the current single-machine setup becomes a bottleneck. The roadmap includes:
-
-- **Apache Spark (PySpark)** — Distribute training data processing and similarity matrix computation across a cluster. Spark MLlib can also handle large-scale ALS-based collaborative filtering natively.
-- **Apache Hadoop (HDFS)** — Use HDFS as a distributed file system to store and access massive datasets (ratings, movie metadata) without memory limitations.
+- **Apache Spark (PySpark)** — Distribute training data processing and similarity matrix computation across a cluster.
+- **Apache Hadoop (HDFS)** — Use HDFS as a distributed file system to store and access massive datasets.
 - **Kubernetes (K8s)** — Containerize the FastAPI backend with Docker and orchestrate auto-scaling with Kubernetes to handle sudden traffic spikes with low latency.
-- **Horizontal API Scaling** — Deploy multiple replicas of the API server behind a **load balancer** (e.g., NGINX or AWS ALB), so thousands of concurrent users can be served without degraded response times.
-- **Distributed Model Serving** — Use tools like **Ray Serve** or **TorchServe** for serving ML models in a distributed, fault-tolerant fashion.
+- **Horizontal API Scaling** — Deploy multiple replicas of the API server behind a load balancer.
 
 ### 🧠 Model Improvements
-- **Deep Learning Recommenders** — Experiment with Neural Collaborative Filtering (NCF) or two-tower models (similar to YouTube DNN) for better cold-start and representation learning.
-- **Session-Based Recommendations** — Use transformer-based models (e.g., BERT4Rec, SASRec) to capture sequential user behavior within a browsing session.
-- **Contextual Bandit / Reinforcement Learning** — Treat recommendations as a decision-making problem to maximize long-term user engagement rather than single-session accuracy.
-- **Graph Neural Networks (GNNs)** — Model user-movie interactions as a bipartite graph and use GNNs (e.g., LightGCN) for richer collaborative signal.
-
-### 🖥️ Product / UI Improvements
-- User account system with persistent rating history.
-- Watchlist and "Not Interested" buttons to refine personalization.
-- Trending / Popular Movies section powered by live data.
-- Movie detail page with poster, trailer, and cast (via TMDb API integration in the frontend).
-- Dark/Light mode toggle.
+- **Deep Learning Recommenders** — Experiment with Neural Collaborative Filtering (NCF) or two-tower models (similar to YouTube DNN).
+- **Session-Based Recommendations** — Use transformer-based models (e.g., BERT4Rec, SASRec) to capture sequential user behavior.
+- **Graph Neural Networks (GNNs)** — Model user-movie interactions as a bipartite graph and use GNNs (e.g., LightGCN).
 
 ---
 
