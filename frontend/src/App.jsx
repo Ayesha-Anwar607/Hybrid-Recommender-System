@@ -633,8 +633,8 @@ function AutocompleteInput({ value, onChange, onSelect, placeholder, allTitles }
         spellCheck="false"
       />
       {open && (
-        <div 
-          className="autocomplete-dropdown" 
+        <div
+          className="autocomplete-dropdown"
           role="listbox"
           onMouseLeave={() => setFocusedIdx(-1)}
         >

@@ -16,12 +16,7 @@ app = FastAPI(title="Movie Recommender API")
 # 2. Setup CORS so your React frontend can talk to this backend later
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=["*"],  # Allows all websites to talk to your API. You can restrict this to your Vercel URL later.
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
