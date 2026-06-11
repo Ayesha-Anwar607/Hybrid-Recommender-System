@@ -11,11 +11,11 @@ __pycache__/
 .Python
 
 # ── Large Dataset Files (never commit raw data) ───────────────────────────────
-# Data/
-# *.csv
-# *.xlsx
-# *.parquet
-# *.feather
+# # Data/
+# # *.csv
+# # *.xlsx
+# # *.parquet
+# # *.feather
 
 # ── Serialized ML Models & Sparse Matrices ────────────────────────────────────
 API/models/

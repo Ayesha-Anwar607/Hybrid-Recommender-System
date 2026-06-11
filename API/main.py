@@ -29,9 +29,9 @@ app.add_middleware(
 
 # 3. Load the "Brain" (Your data and models) globally when the server starts
 BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR.parent / "Data" / "final_movie_cleaned.csv"
+DATA_PATH = BASE_DIR / "Data" / "final_movie_cleaned.csv"
 MODEL_DIR = BASE_DIR / "models"
-RATINGS_PATH = BASE_DIR.parent / "Data" / "ratings_clean.csv"
+RATINGS_PATH = BASE_DIR / "Data" / "ratings_clean.csv"
 
 print("Loading models and data...")
 movies_df = pd.read_csv(DATA_PATH)
