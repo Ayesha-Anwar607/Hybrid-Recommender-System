@@ -1252,6 +1252,10 @@ body {
   .poster-actions {
     opacity: 1;
   }
+
+  .watchlist-view {
+    padding: 1.5rem 16px;
+  }
 }
 
 @media (max-width: 400px) {
@@ -1432,8 +1436,14 @@ body {
 
 /* responsive modal */
 @media (max-width: 560px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+
   .modal-inner {
     flex-direction: column;
+    gap: 16px;
+    padding: 16px;
   }
 
   .modal-poster-wrap {
