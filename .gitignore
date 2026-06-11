@@ -18,10 +18,10 @@ __pycache__/
 # # *.feather
 
 # ── Serialized ML Models & Sparse Matrices ────────────────────────────────────
-API/models/
-*.joblib
-*.npz
-*.pkl
+# API/models/
+# *.joblib
+# *.npz
+# *.pkl
 *.h5
 *.pt
 *.pth
