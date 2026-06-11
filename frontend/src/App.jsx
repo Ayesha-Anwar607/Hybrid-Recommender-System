@@ -718,7 +718,7 @@ export default function App() {
 
   // ── Load titles, genres, and popular movies on mount ──────────────────
   useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    const base = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
 
     fetch(`${base}/movie_titles`)
       .then((r) => r.json())
@@ -764,7 +764,7 @@ export default function App() {
     setActiveGenres(new Set());
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
       const res = await fetch(
         `${baseUrl}/hybrid_recommend?user_id=${encodeURIComponent(userInput)}&movie_title=${encodeURIComponent(movieInput)}&top_n=10`
       );
