@@ -72,3 +72,8 @@ yarn-error.log*
 
 # ── Empty / Unused Directories ────────────────────────────────────────────────
 Web/
+
+# ── SQLite Databases (auto-created at startup, never commit) ──────────────────
+*.db
+*.sqlite
+*.sqlite3

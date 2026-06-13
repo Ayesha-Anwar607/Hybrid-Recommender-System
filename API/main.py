@@ -10,6 +10,12 @@ import pandas as pd
 import scipy.sparse as sp
 from sklearn.metrics.pairwise import cosine_similarity
 
+# Database initialization — creates tables declared in models.py on startup
+import models  # noqa: F401  (importing triggers table registration on Base)
+from database import engine
+
+models.Base.metadata.create_all(bind=engine)
+
 # 1. Initialize the FastAPI app
 app = FastAPI(title="Movie Recommender API")
 
