@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import "./App.css";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -1078,6 +1079,9 @@ export default function App() {
           onDone={() => setToast(null)}
         />
       )}
+
+      {/* ── Vercel Speed Insights ── */}
+      <SpeedInsights />
     </div>
   );
 }
