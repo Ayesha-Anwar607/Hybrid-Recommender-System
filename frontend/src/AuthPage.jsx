@@ -370,13 +370,13 @@ export default function AuthPage({ onAuthSuccess, initialTab = "login" }) {
         <div className="auth-logo">
           <div className="auth-logo-icon">🎬</div>
           <div className="auth-logo-text">
-            Cine<span>AI</span>
+            Cine<span>Match</span>
           </div>
         </div>
 
         {/* Heading */}
         <h1 className="auth-heading">
-          {isLogin ? "Welcome back" : "Join CineAI"}
+          {isLogin ? "Welcome back" : "Join CineMatch"}
         </h1>
         <p className="auth-subheading">
           {isLogin
