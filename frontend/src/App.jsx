@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import "./App.css";
+import AuthPage from "./AuthPage";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -696,8 +697,23 @@ function saveToStorage(userId, type, value) {
 // ── App ────────────────────────────────────────────────────────────────
 
 export default function App() {
+  // ── Auth state ────────────────────────────────────────────────────────────
+  const [authUser, setAuthUser] = useState(() => localStorage.getItem("auth_username") || null);
+
+  function handleAuthSuccess(username) {
+    setAuthUser(username);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_username");
+    setAuthUser(null);
+  }
+
+  // ── Movie/recommender state ───────────────────────────────────────────────
   const [movieInput, setMovieInput] = useState("");
-  const [userInput, setUserInput] = useState("");
+  // userInput mirrors the logged-in username so recommendations are personalised
+  const [userInput, setUserInput] = useState(() => localStorage.getItem("auth_username") || "");
   const [seedTitle, setSeedTitle] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -893,7 +909,18 @@ export default function App() {
       return gs.some((g) => activeGenres.has(g.trim()));
     });
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // ── Sync userInput with authUser ───────────────────────────────────────────
+
+  useEffect(() => {
+    if (authUser) setUserInput(authUser);
+  }, [authUser]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  // Show the auth page if the user is not logged in
+  if (!authUser) {
+    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+  }
 
   return (
     <div className="app">
@@ -920,6 +947,20 @@ export default function App() {
             )}
           </button>
         </div>
+        {/* User info + logout */}
+        <div className="nav-user">
+          <span className="nav-username">
+            <i className="ti ti-user-circle" aria-hidden="true" /> {authUser}
+          </span>
+          <button
+            id="logout-btn"
+            className="nav-logout-btn"
+            onClick={handleLogout}
+            title="Sign out"
+          >
+            <i className="ti ti-logout" aria-hidden="true" /> Logout
+          </button>
+        </div>
       </nav>
 
       {/* ── Discover view ── */}
@@ -941,15 +982,7 @@ export default function App() {
                   allTitles={allTitles}
                 />
 
-                <input
-                  className="user-input"
-                  placeholder="User ID"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  type="number"
-                  min="1"
-                />
+                {/* User ID is now the logged-in username — hidden from manual entry */}
 
                 <button className="search-btn" onClick={handleSearch} disabled={loading}>
                   {loading

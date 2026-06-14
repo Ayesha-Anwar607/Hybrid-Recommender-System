@@ -1,20 +1,40 @@
+import os
+from datetime import datetime, timedelta, timezone
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 import joblib
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 from sklearn.metrics.pairwise import cosine_similarity
+from sqlalchemy.orm import Session
 
 # Database initialization — creates tables declared in models.py on startup
-import models  # noqa: F401  (importing triggers table registration on Base)
-from database import engine
+try:
+    from . import models  # noqa: F401
+    from .database import engine, get_db
+    from . import schemas
+    from .security import hash_password, verify_password
+except ImportError:
+    import models  # type: ignore
+    from database import engine, get_db  # type: ignore
+    import schemas  # type: ignore
+    from security import hash_password, verify_password  # type: ignore
 
 models.Base.metadata.create_all(bind=engine)
+
+# ── JWT config ────────────────────────────────────────────────────────────────
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-production-please")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 
 # 1. Initialize the FastAPI app
 app = FastAPI(title="Movie Recommender API")
@@ -524,6 +544,109 @@ def read_root():
     return {"message": "Movie Recommender API is running!"}
 
 
+# ── Auth helpers ──────────────────────────────────────────────────────────────
+
+def _create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Sign a JWT containing `data` with an expiry timestamp."""
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
+    to_encode["exp"] = expire
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def _get_current_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> models.User:
+    """Decode the JWT and return the matching User row, or raise 401."""
+    credentials_exc = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    if not token:
+        raise credentials_exc
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: Optional[str] = payload.get("sub")
+        if not username:
+            raise credentials_exc
+    except JWTError:
+        raise credentials_exc
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise credentials_exc
+    return user
+
+
+# ── Auth endpoints ─────────────────────────────────────────────────────────────
+
+@app.post(
+    "/register",
+    response_model=schemas.UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["auth"],
+    summary="Create a new user account",
+)
+def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+    """Register a new user. Returns the created user (without password)."""
+    # Check for duplicate username
+    if db.query(models.User).filter(models.User.username == user_in.username).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already taken. Please choose a different one.",
+        )
+    # Check for duplicate email
+    if db.query(models.User).filter(models.User.email == user_in.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with that email already exists.",
+        )
+    new_user = models.User(
+        username=user_in.username,
+        email=user_in.email,
+        hashed_password=hash_password(user_in.password),
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+
+@app.post(
+    "/login",
+    response_model=schemas.Token,
+    tags=["auth"],
+    summary="Login and receive a JWT access token",
+)
+def login(credentials: schemas.UserLogin, db: Session = Depends(get_db)):
+    """Verify username + password and return a signed JWT."""
+    user = db.query(models.User).filter(models.User.username == credentials.username).first()
+    if not user or not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password.",
+        )
+    token = _create_access_token(
+        data={"sub": user.username},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.get(
+    "/me",
+    response_model=schemas.UserResponse,
+    tags=["auth"],
+    summary="Get the current logged-in user's profile",
+)
+def get_me(current_user: models.User = Depends(_get_current_user)):
+    """Returns the profile of the currently authenticated user."""
+    return current_user
+
+
+# ── Entrypoint ─────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     import sys
 
@@ -540,4 +663,3 @@ if __name__ == "__main__":
         reload=True,
         reload_dirs=[str(BASE_DIR)],
     )
-    
