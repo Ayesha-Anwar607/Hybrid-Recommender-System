@@ -5,6 +5,27 @@ import "./AuthPage.css";
 
 const API = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
 
+/**
+ * FastAPI can return `detail` as either a plain string (our custom errors)
+ * or an array of Pydantic validation objects like:
+ *   [{ msg: "String should have at least 6 characters", loc: ["body","password"], ... }]
+ * This helper converts both into a readable message.
+ */
+function parseApiError(detail, fallback) {
+  if (!detail) return fallback;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((e) => {
+        const field = e.loc ? e.loc[e.loc.length - 1] : "";
+        const msg   = e.msg || JSON.stringify(e);
+        return field ? `${field}: ${msg}` : msg;
+      })
+      .join(" · ");
+  }
+  return fallback;
+}
+
 /** Simple password-strength score 0-4 */
 function pwStrength(pw) {
   let score = 0;
@@ -76,7 +97,7 @@ function LoginForm({ onSuccess, onSwitch }) {
         body: JSON.stringify({ username: username.trim(), password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Login failed.");
+      if (!res.ok) throw new Error(parseApiError(data.detail, "Login failed."));
       // Store token + username
       localStorage.setItem("auth_token", data.access_token);
       localStorage.setItem("auth_username", username.trim());
@@ -198,7 +219,7 @@ function SignupForm({ onSuccess, onSwitch }) {
         body: JSON.stringify({ username: username.trim(), email: email.trim(), password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Registration failed.");
+      if (!res.ok) throw new Error(parseApiError(data.detail, "Registration failed."));
 
       // Auto-login right after registration
       const loginRes = await fetch(`${API}/login`, {
@@ -207,7 +228,7 @@ function SignupForm({ onSuccess, onSwitch }) {
         body: JSON.stringify({ username: username.trim(), password }),
       });
       const loginData = await loginRes.json();
-      if (!loginRes.ok) throw new Error(loginData.detail || "Auto-login failed.");
+      if (!loginRes.ok) throw new Error(parseApiError(loginData.detail, "Auto-login failed."));
 
       localStorage.setItem("auth_token", loginData.access_token);
       localStorage.setItem("auth_username", username.trim());
