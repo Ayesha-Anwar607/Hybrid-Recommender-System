@@ -14,14 +14,12 @@ body {
   background: #0a0c14;
   color: #e8e6f0;
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
-  min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
 }
 
 /* ── App Shell ─────────────────────────────────────────────────────────────── */
 .app {
-  min-height: 100vh;
-  background: #0a0c14;
   position: relative;
   overflow-x: hidden;
   padding-bottom: 5rem;
@@ -289,6 +287,9 @@ body {
   gap: 8px;
   transition: background 0.15s, color 0.15s;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .autocomplete-item:last-child {
