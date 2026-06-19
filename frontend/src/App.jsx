@@ -699,6 +699,7 @@ function saveToStorage(userId, type, value) {
 export default function App() {
   const [movieInput, setMovieInput] = useState("");
   const [userInput, setUserInput] = useState("");
+  const [userIdFieldValue, setUserIdFieldValue] = useState("");
   const [seedTitle, setSeedTitle] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -757,13 +758,25 @@ export default function App() {
 
   // ── Search ───────────────────────────────────────────────────────────────
 
+  // ── UPGRADE IT TO THIS ──
   async function handleSearch() {
-    if (!movieInput.trim() || !userInput.trim()) return;
+    // 1. First, check if the typed field value has content
+    if (!movieInput.trim() || !userIdFieldValue.trim()) return;
+    
+    // 2. Commit the typed data to the stagnant state variable!
+    setUserInput(userIdFieldValue.trim()); 
+    
     setLoading(true);
     setError(null);
     setResults([]);
     setActiveGenres(new Set());
-
+    
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
+      const res = await fetch(
+        // Make sure to use the raw userIdFieldValue here so the API call gets the most up-to-date input immediately
+        `${baseUrl}/hybrid_recommend?user_id=${encodeURIComponent(userIdFieldValue.trim())}&movie_title=${encodeURIComponent(movieInput)}&top_n=10`
+      );
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
       const res = await fetch(
@@ -828,31 +841,28 @@ export default function App() {
 
   function handleFeedback(movie, type) {
     const key = movie.tmdb_id ?? movie.title;
-    setFeedbackMap((prev) => {
-      const current = prev[key];
-      const next = current === type ? null : type;
-      const newFeedbackMap = { ...prev, [key]: next };
-      saveToStorage(userInput, "feedback", newFeedbackMap);
+    const current = feedbackMap[key];
+    const next = current === type ? null : type;
 
-      // Keep likedMovies list in sync
-      setLikedMovies((prevLiked) => {
-        let updated;
-        if (next === "like") {
-          // Add if not already present
-          const exists = prevLiked.some((m) => (m.tmdb_id ?? m.title) === key);
-          updated = exists ? prevLiked : [movie, ...prevLiked];
-        } else {
-          // Remove from liked list (either toggled off or switched to dislike)
-          updated = prevLiked.filter((m) => (m.tmdb_id ?? m.title) !== key);
-        }
-        saveToStorage(userInput, "liked", updated);
-        return updated;
-      });
+    // 1. Calculate and update feedback map safely
+    const newFeedbackMap = { ...feedbackMap, [key]: next };
+    setFeedbackMap(newFeedbackMap);
+    saveToStorage(userInput, "feedback", newFeedbackMap);
 
-      if (next === "like") showToast("Marked as a great pick", "thumb-up", "like");
-      if (next === "dislike") showToast("Got it — we'll note that", "thumb-down", "dislike");
-      return newFeedbackMap;
-    });
+    // 2. Handle liked list updates safely sequentially
+    let updatedLikes = [...likedMovies];
+    if (next === "like") {
+      if (!updatedLikes.some((m) => (m.tmdb_id ?? m.title) === key)) {
+        updatedLikes = [movie, ...updatedLikes];
+      }
+    } else {
+      updatedLikes = updatedLikes.filter((m) => (m.tmdb_id ?? m.title) !== key);
+    }
+    setLikedMovies(updatedLikes);
+    saveToStorage(userInput, "liked", updatedLikes);
+
+    if (next === "like") showToast("Marked as a great pick", "thumb-up", "like");
+    if (next === "dislike") showToast("Got it — we'll note that", "thumb-down", "dislike");
   }
 
   function handleRemoveLiked(movie) {
@@ -941,17 +951,15 @@ export default function App() {
                   placeholder="Seed movie — try Shawshank Redemption"
                   allTitles={allTitles}
                 />
-
                 <input
                   className="user-input"
                   placeholder="User ID"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
+                  value={userIdFieldValue}
+                  onChange={(e) => setUserIdFieldValue(e.target.value)} // Now saves typing memory safely without triggering useEffect!
                   onKeyDown={handleKeyDown}
                   type="number"
                   min="1"
                 />
-
                 <button className="search-btn" onClick={handleSearch} disabled={loading}>
                   {loading
                     ? <i className="ti ti-loader-2 spin" aria-hidden="true" />
@@ -1033,7 +1041,7 @@ export default function App() {
             <div className="grid">
               {filteredResults.map((movie, i) => (
                 <MovieCard
-                  key={movie.tmdb_id ?? i}
+                  key={movie.tmdb_id ?? movie.title}
                   movie={movie}
                   onSave={handleSave}
                   onFeedback={handleFeedback}
