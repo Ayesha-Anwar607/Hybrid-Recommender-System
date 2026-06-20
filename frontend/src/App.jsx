@@ -46,7 +46,7 @@ function Toast({ message, icon, type, onDone }) {
 
 // ── MovieCard ──────────────────────────────────────────────────────────────
 
-function MovieCard({ movie, onSave, onFeedback, savedIds, feedbackMap }) {
+function MovieCard({ movie, onSave, onFeedback, savedIds, feedbackMap, index }) {
   const [expanded, setExpanded] = useState(false);
   const [posterUrl, setPosterUrl] = useState(null);
   const [trailerUrl, setTrailerUrl] = useState(null);
@@ -60,24 +60,30 @@ function MovieCard({ movie, onSave, onFeedback, savedIds, feedbackMap }) {
     setLoadingPoster(true);
     let mounted = true;
     const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+    const delay = (index ?? 0) * 150; // Stagger requests to prevent TMDB rate limits (prevents 500/502/429 errors)
 
-    fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}?api_key=${API_KEY}`)
-      .then((r) => r.json())
-      .then((d) => { if (mounted && d.poster_path) setPosterUrl(`https://image.tmdb.org/t/p/w500${d.poster_path}`); })
-      .catch(() => { });
+    const timer = setTimeout(() => {
+      fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}?api_key=${API_KEY}`)
+        .then((r) => r.json())
+        .then((d) => { if (mounted && d.poster_path) setPosterUrl(`https://image.tmdb.org/t/p/w500${d.poster_path}`); })
+        .catch(() => { });
 
-    fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}/videos?api_key=${API_KEY}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!mounted || !d.results) return;
-        const t = d.results.find((v) => v.site === "YouTube" && v.type === "Trailer");
-        if (t) setTrailerUrl(`https://www.youtube.com/watch?v=${t.key}`);
-      })
-      .catch(() => { })
-      .finally(() => { if (mounted) setLoadingPoster(false); });
+      fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}/videos?api_key=${API_KEY}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!mounted || !d.results) return;
+          const t = d.results.find((v) => v.site === "YouTube" && v.type === "Trailer");
+          if (t) setTrailerUrl(`https://www.youtube.com/watch?v=${t.key}`);
+        })
+        .catch(() => { })
+        .finally(() => { if (mounted) setLoadingPoster(false); });
+    }, delay);
 
-    return () => { mounted = false; };
-  }, [movie.tmdb_id]);
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, [movie.tmdb_id, index]);
 
   const genres = Array.isArray(movie.genres)
     ? movie.genres
@@ -469,9 +475,10 @@ function WatchlistView({ watchlist, likedMovies, onRemove, onRemoveLiked, onSele
         </div>
       ) : (
         <div className="watchlist-list">
-          {watchlist.map((movie) => (
+          {watchlist.map((movie, i) => (
             <WatchlistItem
               key={movie.tmdb_id ?? movie.title}
+              index={i}
               movie={movie}
               onRemove={onRemove}
               onSelect={onSelect}
@@ -500,9 +507,10 @@ function WatchlistView({ watchlist, likedMovies, onRemove, onRemoveLiked, onSele
         </div>
       ) : (
         <div className="watchlist-list">
-          {likedMovies.map((movie) => (
+          {likedMovies.map((movie, i) => (
             <WatchlistItem
               key={movie.tmdb_id ?? movie.title}
+              index={i}
               movie={movie}
               onRemove={onRemoveLiked}
               onSelect={onSelect}
@@ -517,17 +525,27 @@ function WatchlistView({ watchlist, likedMovies, onRemove, onRemoveLiked, onSele
   );
 }
 
-function WatchlistItem({ movie, onRemove, onSelect, accentColor, removeIcon = "ti-x", removeLabel }) {
+function WatchlistItem({ movie, onRemove, onSelect, accentColor, removeIcon = "ti-x", removeLabel, index }) {
   const [posterUrl, setPosterUrl] = useState(null);
 
   useEffect(() => {
     if (!movie.tmdb_id) return;
+    let mounted = true;
     const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-    fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}?api_key=${API_KEY}`)
-      .then((r) => r.json())
-      .then((d) => { if (d.poster_path) setPosterUrl(`https://image.tmdb.org/t/p/w92${d.poster_path}`); })
-      .catch(() => { });
-  }, [movie.tmdb_id]);
+    const delay = (index ?? 0) * 100; // Stagger requests to prevent concurrent TMDb rate-limiting
+
+    const timer = setTimeout(() => {
+      fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}?api_key=${API_KEY}`)
+        .then((r) => r.json())
+        .then((d) => { if (mounted && d.poster_path) setPosterUrl(`https://image.tmdb.org/t/p/w92${d.poster_path}`); })
+        .catch(() => { });
+    }, delay);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, [movie.tmdb_id, index]);
 
   const genres = Array.isArray(movie.genres)
     ? movie.genres.join(", ")
@@ -1036,6 +1054,7 @@ export default function App() {
               {filteredResults.map((movie, i) => (
                 <MovieCard
                   key={movie.tmdb_id ?? movie.title}
+                  index={i}
                   movie={movie}
                   onSave={handleSave}
                   onFeedback={handleFeedback}
