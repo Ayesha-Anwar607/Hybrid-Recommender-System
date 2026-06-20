@@ -763,7 +763,7 @@ export default function App() {
     // 1. First, check if the typed field value has content
     if (!movieInput.trim() || !userIdFieldValue.trim()) return;
     
-    // 2. Commit the typed data to the stagnant state variable!
+    // 2. Commit the typed data to the state variable
     setUserInput(userIdFieldValue.trim()); 
     
     setLoading(true);
@@ -774,13 +774,8 @@ export default function App() {
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
       const res = await fetch(
-        // Make sure to use the raw userIdFieldValue here so the API call gets the most up-to-date input immediately
+        // Use the raw userIdFieldValue here so the API call gets the most up-to-date input immediately
         `${baseUrl}/hybrid_recommend?user_id=${encodeURIComponent(userIdFieldValue.trim())}&movie_title=${encodeURIComponent(movieInput)}&top_n=10`
-      );
-    try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "https://hybrid-recommender-system-z6m4.onrender.com";
-      const res = await fetch(
-        `${baseUrl}/hybrid_recommend?user_id=${encodeURIComponent(userInput)}&movie_title=${encodeURIComponent(movieInput)}&top_n=10`
       );
       if (!res.ok) {
         const err = await res.json();
@@ -797,7 +792,6 @@ export default function App() {
       setLoading(false);
     }
   }
-
   function handleKeyDown(e) {
     if (e.key === "Enter") handleSearch();
   }
