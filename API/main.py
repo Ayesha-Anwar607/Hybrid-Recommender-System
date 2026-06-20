@@ -29,20 +29,30 @@ MODEL_DIR = BASE_DIR / "models"
 RATINGS_PATH = BASE_DIR / "Data" / "ratings_clean.csv"
 
 print("Loading models and data...")
-movies_df = pd.read_csv(DATA_PATH)
+movies_df = pd.read_csv(DATA_PATH).dropna(subset=["title"])
+movies_df["title"] = movies_df["title"].astype(str).str.strip()
+movies_df["genres"] = movies_df["genres"].fillna("").astype(str).str.strip()
 ratings_df = pd.read_csv(RATINGS_PATH)
 if "timestamp" in ratings_df.columns:
     ratings_df = ratings_df.drop(columns=["timestamp"])
 
-item_sim_df = joblib.load(MODEL_DIR / "item_sim_df.joblib")
-user_sim_df = joblib.load(MODEL_DIR / "user_sim_df.joblib")
-xgboost_model = joblib.load(MODEL_DIR / "xgboost_hybrid.joblib")
-feature_names = joblib.load(MODEL_DIR / "feature_names.joblib")
+try:
+    item_sim_df = joblib.load(MODEL_DIR / "item_sim_df.joblib")
+    user_sim_df = joblib.load(MODEL_DIR / "user_sim_df.joblib")
+    xgboost_model = joblib.load(MODEL_DIR / "xgboost_hybrid.joblib")
+    feature_names = joblib.load(MODEL_DIR / "feature_names.joblib")
 
-overview_matrix = sp.load_npz(MODEL_DIR / "overview_matrix.npz")
-genres_matrix = sp.load_npz(MODEL_DIR / "genres_matrix.npz")
-director_matrix = sp.load_npz(MODEL_DIR / "director_matrix.npz")
-cast_matrix = sp.load_npz(MODEL_DIR / "cast_matrix.npz")
+    overview_matrix = sp.load_npz(MODEL_DIR / "overview_matrix.npz")
+    genres_matrix = sp.load_npz(MODEL_DIR / "genres_matrix.npz")
+    director_matrix = sp.load_npz(MODEL_DIR / "director_matrix.npz")
+    cast_matrix = sp.load_npz(MODEL_DIR / "cast_matrix.npz")
+except FileNotFoundError as e:
+    print(f"\u274c ERROR: Could not load model file: {e}")
+    print("Make sure all model files exist in the 'models/' directory.")
+    raise SystemExit(1)
+except Exception as e:
+    print(f"\u274c ERROR: Failed to load models: {e}")
+    raise SystemExit(1)
 
 print("Setup complete!")
 
@@ -105,7 +115,12 @@ movie_sums = _rating_group_sums(ratings_df, "movieId")
 movie_counts = _rating_group_counts(ratings_df, "movieId")
 global_avg_rating = ratings_df["rating"].mean()
 
-title_to_index = {title.strip().lower(): idx for idx, title in enumerate(movies_df["title"])}
+# Fix: first-occurrence wins, consistent with movies_by_id (which uses drop_duplicates)
+title_to_index = {}
+for _enum_idx, _title in enumerate(movies_df["title"]):
+    _key = _title.strip().lower()
+    if _key not in title_to_index:
+        title_to_index[_key] = _enum_idx
 normalized_titles = [title.strip().lower() for title in movies_df["title"]]
 
 
@@ -154,7 +169,8 @@ def get_recommendations_from_similarity(movie_title: str, top_n: int = 5):
     seed_movie_id = int(seed_row["movieId_x"])
 
     # Fall back to content-based similarity when the movie isn't in the item CF matrix
-    use_content_fallback = seed_movie_id not in item_sim_df.index
+    # Fix: use the pre-built integer-keyed dict for a type-safe membership check
+    use_content_fallback = seed_movie_id not in movie_id_to_sim_idx
 
     if use_content_fallback:
         # Use content similarity scores instead
@@ -293,21 +309,27 @@ def get_hybrid_collab_user_scores_for_candidates(user_id: int, candidate_mids):
 
 
 def build_hybrid_features(user_id: int, movie_id: int, content_score: float, collab_item_score: float, collab_user_score: float):
-    user_count = user_counts.get(user_id, 0)
-    user_avg = user_sums.get(user_id, 0.0) / user_count if user_count else global_avg_rating
+    user_history = user_ratings_map.get(user_id, {})
+    if not user_history:
+        # Fix: use computed global_avg_rating instead of a hardcoded 3.5
+        user_avg = global_avg_rating
+        user_count = 0
+    else:
+        user_count = user_counts.get(user_id, 0)
+        user_avg = user_sums.get(user_id, 0.0) / user_count if user_count else global_avg_rating
 
     movie_count = movie_counts.get(movie_id, 0)
     movie_avg = movie_sums.get(movie_id, 0.0) / movie_count if movie_count else global_avg_rating
 
-    return [
-        user_avg,
-        user_count,
-        movie_avg,
-        movie_count,
-        collab_item_score,
-        collab_user_score,
-        content_score,
-    ]
+    return {
+        "user_avg_rating": user_avg,
+        "user_rating_count": user_count,
+        "movie_avg_rating": movie_avg,
+        "movie_rating_count": movie_count,
+        "collab_item_score": collab_item_score,
+        "collab_user_score": collab_user_score,
+        "content_score": content_score,
+    }
 
 
 def get_hybrid_recommendations(user_id: int, movie_title: str, top_n: int = 10):
@@ -362,7 +384,8 @@ def get_hybrid_recommendations(user_id: int, movie_title: str, top_n: int = 10):
                 user_id,
                 mid,
                 float(content_scores.get(mid, 0.0)),
-                float(collab_item_scores.get(mid, np.nan) if has_real_collab_signal else np.nan),
+                # Fix: fall back to global_avg_rating (not NaN) when signal exists but mid is missing
+                float(collab_item_scores.get(mid, global_avg_rating) if has_real_collab_signal else np.nan),
                 float(collab_user_scores.get(mid, np.nan)),
             )
         )
@@ -371,7 +394,8 @@ def get_hybrid_recommendations(user_id: int, movie_title: str, top_n: int = 10):
     if not valid_mids:
         return seed_row["title"], []
 
-    X_candidates = pd.DataFrame(feature_rows, columns=feature_names)
+    X_candidates = pd.DataFrame(feature_rows)
+    X_candidates = X_candidates[feature_names]  # Locks correct sequence mathematically!
     preds = xgboost_model.predict(X_candidates)
 
     results = pd.DataFrame(
@@ -427,19 +451,18 @@ def recommend(
     if not title:
         raise HTTPException(status_code=400, detail="Missing movie parameter 'movie' or 'movie_title'")
 
+    # Fix: standardized response shape — always use "seed_movie" key in both branches
     if user_id is not None:
         seed_movie, recommendations = get_hybrid_recommendations(user_id, title, top_n=k)
         return {
             "user_id": user_id,
             "seed_movie": seed_movie,
-            "seed_title": seed_movie,
             "recommendations": recommendations,
         }
 
-    searched_movie, recommendations = get_recommendations_from_similarity(title, top_n=k)
+    seed_movie, recommendations = get_recommendations_from_similarity(title, top_n=k)
     return {
-        "searched_movie": searched_movie,
-        "seed_title": searched_movie,
+        "seed_movie": seed_movie,
         "recommendations": recommendations,
     }
 
@@ -451,6 +474,7 @@ def hybrid_recommend(user_id: int, movie_title: str, top_n: int = 10):
     Example: http://localhost:8000/hybrid_recommend?user_id=1&movie_title=Inception
     """
 
+    top_n = min(top_n, 50)  # Fix: cap at 50 to prevent abuse / heavy computation
     seed_movie, recommendations = get_hybrid_recommendations(user_id, movie_title, top_n=top_n)
     return {
         "user_id": user_id,
@@ -466,6 +490,7 @@ def get_popular_movies(n: int = 12):
     Returns the top N popular/well-rated movies from the dataset.
     Used to populate the landing page before any search is made.
     """
+    n = min(n, 50)  # Fix: cap at 50 to prevent abuse / returning entire dataset
     df = movies_by_id[
         movies_by_id["vote_average"].notna() & movies_by_id["popularity"].notna()
     ].copy()
@@ -498,7 +523,7 @@ def get_all_genres():
     for genres_raw in movies_df["genres"].dropna():
         for g in str(genres_raw).replace("|", ",").split(","):
             g = g.strip()
-            if g:
+            if g and g.lower() not in ("nan", "none", "null"):
                 genre_set.add(g)
     return {"genres": sorted(genre_set)}
 
@@ -509,7 +534,12 @@ def get_movie_titles():
     Returns all unique movie titles from the dataset, sorted alphabetically.
     Used by the frontend autocomplete search dropdown.
     """
-    titles = sorted(movies_df["title"].dropna().unique().tolist())
+    titles = sorted(
+        [
+            t for t in movies_df["title"].dropna().unique().tolist()
+            if t and t.lower() not in ("nan", "none", "null")
+        ]
+    )
     return {"titles": titles}
 
 
