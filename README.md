@@ -1,19 +1,19 @@
-# 🎬 CineMatch — Movie Recommender System (XGBoost Hybrid)
+# CineMatch — Movie Recommender System (XGBoost Hybrid)
 
 A state-of-the-art hybrid movie recommender system that combines **Content-Based Filtering** (TF-IDF on Overview, Genres, Cast, Director) and **Collaborative Filtering** (Item-Based and User-Based) using a **Machine Learning Ranking Model (XGBoost)** to predict user ratings. Served via a **FastAPI** backend (deployed on **Render**) and a **React + Vite** frontend (deployed on **Vercel**).
 
-### 🔗 Live Links
+###  Live Links
 * **Live Website (Vercel)**: [https://hybrid-recommender-system-alpha.vercel.app/](https://hybrid-recommender-system-alpha.vercel.app/)
 * **Backend API Docs (Render)**: [https://hybrid-recommender-system-z6m4.onrender.com/docs](https://hybrid-recommender-system-z6m4.onrender.com/docs)
 
 ---
 
-## 🖥️ Live Application Preview
+##  Live Application Preview
 ![CineMatch Dashboard](screenshots/cinematch_dashboard.png)
 
 ---
 
-## 🏗️ Model Architecture & Algorithms
+##  Model Architecture & Algorithms
 
 This recommender system is designed as a **two-stage ranker** similar to industrial engines (e.g., Netflix and YouTube):
 
@@ -44,7 +44,7 @@ This recommender system is designed as a **two-stage ranker** similar to industr
                        [ Top K Recommendations ]
 ```
 
-### 🧠 Core Algorithms
+### Core Algorithms
 1. **Content-Based Filtering (TF-IDF + Cosine Similarity)**:
    * Extracts textual features from movie overviews, genres, cast, and directors using **TF-IDF Vectorization** (Term Frequency-Inverse Document Frequency).
    * Calculates pairwise **Cosine Similarity** between movies to quantify content alignment.
@@ -67,7 +67,7 @@ This recommender system is designed as a **two-stage ranker** similar to industr
 
 ---
 
-## 📁 File Structure
+##  File Structure
 
 ```
 Recommender file/
@@ -77,7 +77,6 @@ Recommender file/
 │   ├── __init__.py
 │   ├── main.py                              # FastAPI server — all endpoints
 │   ├── requirements.txt                     # Backend dependencies for Render
-│   ├── Data/                                # Tracked dataset files (final CSVs)
 │   └── models/                              # Tracked trained models & matrices
 │       ├── xgboost_hybrid.joblib
 │       ├── item_sim_df.joblib
@@ -89,11 +88,7 @@ Recommender file/
 │   │   ├── App.jsx                         # Main component (Cinematic Glass UI)
 │   │   ├── App.css                         # Dark-mode styled CSS
 │   │   ├── index.css
-│   │   └── main.jsx
-│   ├── .env                                 # Environment keys (ignored)
-│   └── package.json
-├── screenshots/
-│   └── cinematch_dashboard.png              # Screenshot of the live application
+│   │   └── main.jsxn
 ├── requirements.txt                         # Root Python dependencies
 ├── .gitignore
 └── README.md
@@ -101,7 +96,7 @@ Recommender file/
 
 ---
 
-## ⚙️ Installation & Setup (Local)
+##  Installation & Setup (Local)
 
 ### 1. Clone the Repository
 ```bash
@@ -142,7 +137,7 @@ npm run dev
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -154,7 +149,7 @@ npm run dev
 
 ---
 
-## 📊 Model Evaluation Results
+##  Model Evaluation Results
 
 The XGBoost Hybrid Ranker achieves the following performance metrics on the test set:
 
@@ -173,7 +168,7 @@ The XGBoost Hybrid Ranker achieves the following performance metrics on the test
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -185,21 +180,21 @@ The XGBoost Hybrid Ranker achieves the following performance metrics on the test
 
 ---
 
-## 🚀 Future Plans & Expansion Roadmap
+##  Future Plans & Expansion Roadmap
 
 ### 📡 Live Streaming Data Integration
 - Replace static CSV datasets with **real-time data pipelines** using **Apache Kafka** or **AWS Kinesis** to ingest live user events (ratings, clicks, watch history).
 - Update user and item embeddings **on-the-fly** without full model retraining — enabling the system to adapt to trends as they happen (e.g., viral movies, new releases).
 - Integrate with **TMDb's live API** to automatically pull new movie metadata as films are released.
 
-### ⚡ Distributed & Parallel Computing for Scale
+###  Distributed & Parallel Computing for Scale
 As the user base and dataset grow, the current single-machine setup becomes a bottleneck. The roadmap includes:
 - **Apache Spark (PySpark)** — Distribute training data processing and similarity matrix computation across a cluster.
 - **Apache Hadoop (HDFS)** — Use HDFS as a distributed file system to store and access massive datasets.
 - **Kubernetes (K8s)** — Containerize the FastAPI backend with Docker and orchestrate auto-scaling with Kubernetes to handle sudden traffic spikes with low latency.
 - **Horizontal API Scaling** — Deploy multiple replicas of the API server behind a load balancer.
 
-### 🧠 Model Improvements
+###  Model Improvements
 - **Deep Learning Recommenders** — Experiment with Neural Collaborative Filtering (NCF) or two-tower models (similar to YouTube DNN).
 - **Session-Based Recommendations** — Use transformer-based models (e.g., BERT4Rec, SASRec) to capture sequential user behavior.
 - **Graph Neural Networks (GNNs)** — Model user-movie interactions as a bipartite graph and use GNNs (e.g., LightGCN).
